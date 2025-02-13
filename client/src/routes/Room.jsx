@@ -2,6 +2,7 @@ import React from "react";
 import io from "socket.io-client";
 
 const Room = (props) => {
+  const [camera, setCamera] = React.useState("front_camera");
   const userVideo = React.useRef();
   const partnerVideo = React.useRef();
   const peerRef = React.useRef();
@@ -12,7 +13,12 @@ const Room = (props) => {
 
   React.useEffect(() => {
     navigator.mediaDevices
-      .getUserMedia({ audio: true, video: true })
+      .getUserMedia({
+        audio: false,
+        video: {
+          facingMode: camera === "front_camera" ? "user" : "environment",
+        },
+      })
       .then((stream) => {
         userVideo.current.srcObject = stream;
         userStream.current = stream;
@@ -32,8 +38,8 @@ const Room = (props) => {
         socketRef.current.on("offer", handleReceiveCall);
         socketRef.current.on("answer", handleAnswer);
         socketRef.current.on("ice-candidate", handleNewICECandidateMsg);
-      });
-  }, []);
+      }).catch(e => console.log(e));
+  }, [camera]);
 
   React.useEffect(() => {
     document.addEventListener("visibilitychange", (event) => {
@@ -63,7 +69,7 @@ const Room = (props) => {
           urls: "stun:stun.stunprotocol.org",
         },
         {
-          url: "turn:numb.viagenie.ca",
+          urls: "turn:numb.viagenie.ca",
           credential: "muazkh",
           username: "webrtc@live.com",
         },
@@ -153,9 +159,11 @@ const Room = (props) => {
   function shareScreen() {
     navigator.mediaDevices.getDisplayMedia({ cursor: true }).then((stream) => {
       const screenTrack = stream.getTracks()[0];
+      console.log(senders);
       senders.current
         .find((sender) => sender.track.kind === "video")
         .replaceTrack(screenTrack);
+      console.log(senders);
       screenTrack.onended = function () {
         senders.current
           .find((sender) => sender.track.kind === "video")
@@ -165,13 +173,23 @@ const Room = (props) => {
   }
 
   function copyLink() {
-    navigator.clipboard.writeText(props.match.params.roomID);
+    navigator.clipboard.writeText(
+      "https://video-app-18v8.onrender.com/rooms/" + props.match.params.roomID
+    );
+  }
+
+  function changeCamera(event) {
+      setCamera(event.target.value);
   }
 
   return (
     <div>
       <video controls autoPlay ref={userVideo}></video>
       <video controls autoPlay ref={partnerVideo}></video>
+      <select onChange={(e) => changeCamera(e)}>
+        <option value="back_camera">Back Camera</option>
+        <option value="front_camera">Front Camera</option>
+      </select>
       <button onClick={shareScreen}>Share Screen</button>
       <button onClick={copyLink}>Copy Link</button>
       <button onClick={requestPictureInPicture}>
