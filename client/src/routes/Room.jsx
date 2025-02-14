@@ -16,7 +16,7 @@ const Room = (props) => {
       .getUserMedia({
         audio: false,
         video: {
-          facingMode: camera === "front_camera" ? "user" : "environment",
+            facingMode: camera === "front_camera" ? "user" : {exact: "environment"},
         },
       })
       .then((stream) => {
@@ -38,7 +38,8 @@ const Room = (props) => {
         socketRef.current.on("offer", handleReceiveCall);
         socketRef.current.on("answer", handleAnswer);
         socketRef.current.on("ice-candidate", handleNewICECandidateMsg);
-      }).catch(e => console.log(e));
+      })
+      .catch((e) => console.log(e));
   }, [camera]);
 
   React.useEffect(() => {
@@ -64,16 +65,21 @@ const Room = (props) => {
 
   function createPeer(userId) {
     const peer = new RTCPeerConnection({
-      iceServers: [
-        {
-          urls: "stun:stun.stunprotocol.org",
-        },
-        {
-          urls: "turn:numb.viagenie.ca",
-          credential: "muazkh",
-          username: "webrtc@live.com",
-        },
-      ],
+        iceServers: [
+      {
+        urls: "stun:stun.relay.metered.ca:80",
+      },
+      {
+        urls: "turn:asia.relay.metered.ca:80",
+        username: process.env.REACT_APP_USERNAME,
+        credential: process.env.REACT_APP_CREDENTIAL
+      },
+      {
+        urls: "turn:asia.relay.metered.ca:80?transport=tcp",
+        username: process.env.REACT_APP_USERNAME,
+        credential: process.env.REACT_APP_CREDENTIAL
+      },
+  ],
     });
     peer.onicecandidate = handleICECandidateEvent;
     peer.ontrack = handleTrackEvent;
@@ -179,14 +185,14 @@ const Room = (props) => {
   }
 
   function changeCamera(event) {
-      setCamera(event.target.value);
+    setCamera(event.target.value);
   }
 
   return (
     <div>
       <video controls autoPlay ref={userVideo}></video>
       <video controls autoPlay ref={partnerVideo}></video>
-      <select onChange={(e) => changeCamera(e)}>
+      <select defaultValue={"front_camera"} onChange={(e) => changeCamera(e)}>
         <option value="back_camera">Back Camera</option>
         <option value="front_camera">Front Camera</option>
       </select>
