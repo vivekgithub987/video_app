@@ -35,7 +35,6 @@ const Room = (props) => {
         });
 
         socketRef.current.on("user joined", (userID) => {
-          callUser(userID);
           otherUser.current = userID;
         });
 
