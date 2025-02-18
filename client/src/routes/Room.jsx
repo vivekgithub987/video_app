@@ -30,6 +30,7 @@ const Room = (props) => {
         socketRef.current.emit("join room", props.match.params.roomID);
 
         socketRef.current.on("other user", (userID) => {
+            console.log("other user joins");
           callUser(userID);
           otherUser.current = userID;
         });
@@ -56,7 +57,6 @@ const Room = (props) => {
   }, []);
 
   function callUser(userId) {
-    console.log("call user");
     peerRef.current = createPeer(userId);
     console.log(userStream.current);
     userStream.current
@@ -170,7 +170,6 @@ const Room = (props) => {
       .then((stream) => {
         const screenTrack = stream.getTracks()[0];
         screenVideo.current.srcObject = stream;
-          console.log(senders);
         senders.current
           .find((sender) => sender.track.kind === "video")
           .replaceTrack(screenTrack);
