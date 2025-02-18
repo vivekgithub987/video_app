@@ -35,6 +35,7 @@ const Room = (props) => {
         });
 
         socketRef.current.on("user joined", (userID) => {
+          callUser(userID);
           otherUser.current = userID;
         });
 
@@ -56,6 +57,7 @@ const Room = (props) => {
   }, []);
 
   function callUser(userId) {
+    console.log("call user");
     peerRef.current = createPeer(userId);
     console.log(userStream.current);
     userStream.current
