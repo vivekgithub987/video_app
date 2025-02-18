@@ -169,6 +169,7 @@ const Room = (props) => {
       .then((stream) => {
         const screenTrack = stream.getTracks()[0];
         screenVideo.current.srcObject = stream;
+          console.log(senders);
         senders.current
           .find((sender) => sender.track.kind === "video")
           .replaceTrack(screenTrack);
