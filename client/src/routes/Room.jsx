@@ -10,13 +10,16 @@ const Room = (props) => {
   const otherUser = React.useRef();
   const userStream = React.useRef();
   const senders = React.useRef([]);
+  const screenVideo = React.useRef();
+  const remoteScreenVideo = React.useRef();
 
   React.useEffect(() => {
     navigator.mediaDevices
       .getUserMedia({
         audio: false,
         video: {
-            facingMode: camera === "front_camera" ? "user" : {exact: "environment"},
+          facingMode:
+            camera === "front_camera" ? "user" : { exact: "environment" },
         },
       })
       .then((stream) => {
@@ -54,6 +57,7 @@ const Room = (props) => {
 
   function callUser(userId) {
     peerRef.current = createPeer(userId);
+    console.log(userStream.current);
     userStream.current
       .getTracks()
       .forEach((track) =>
@@ -64,22 +68,15 @@ const Room = (props) => {
   }
 
   function createPeer(userId) {
+    let iceServers = [];
+    fetch(
+      "https://vivek_kumar987.metered.live/api/v1/turn/credentials?apiKey="+ process.env.REACT_APP_TURN_SERVER_API_KEY+"&region=global"
+    )
+      .then((response) => response.json())
+      .then((data) => (iceServers = data))
+      .catch((err) => console.log(err));
     const peer = new RTCPeerConnection({
-        iceServers: [
-      {
-        urls: "stun:stun.relay.metered.ca:80",
-      },
-      {
-        urls: "turn:asia.relay.metered.ca:80",
-        username: process.env.REACT_APP_USERNAME,
-        credential: process.env.REACT_APP_CREDENTIAL
-      },
-      {
-        urls: "turn:asia.relay.metered.ca:80?transport=tcp",
-        username: process.env.REACT_APP_USERNAME,
-        credential: process.env.REACT_APP_CREDENTIAL
-      },
-  ],
+      iceServers: iceServers,
     });
     peer.onicecandidate = handleICECandidateEvent;
     peer.ontrack = handleTrackEvent;
@@ -150,7 +147,6 @@ const Room = (props) => {
 
   function handleNewICECandidateMsg(incoming) {
     const candidate = new RTCIceCandidate(incoming);
-
     peerRef.current.addIceCandidate(candidate).catch((e) => console.log(e));
   }
 
@@ -163,19 +159,25 @@ const Room = (props) => {
   }
 
   function shareScreen() {
-    navigator.mediaDevices.getDisplayMedia({ cursor: true }).then((stream) => {
-      const screenTrack = stream.getTracks()[0];
-      console.log(senders);
-      senders.current
-        .find((sender) => sender.track.kind === "video")
-        .replaceTrack(screenTrack);
-      console.log(senders);
-      screenTrack.onended = function () {
+    navigator.mediaDevices
+      .getDisplayMedia({
+        cursor: true,
+        displaySurface: "monitor",
+        logicalSurface: false,
+        video: true,
+      })
+      .then((stream) => {
+        const screenTrack = stream.getTracks()[0];
+        screenVideo.current.srcObject = stream;
         senders.current
           .find((sender) => sender.track.kind === "video")
-          .replaceTrack(userStream.current.getTracks()[1]);
-      };
-    });
+          .replaceTrack(screenTrack);
+        screenTrack.onended = function () {
+          senders.current
+            .find((sender) => sender.track.kind === "video")
+            .replaceTrack(userStream.current.getTracks()[0]);
+        };
+      });
   }
 
   function copyLink() {
@@ -190,8 +192,10 @@ const Room = (props) => {
 
   return (
     <div>
-      <video controls autoPlay ref={userVideo}></video>
-      <video controls autoPlay ref={partnerVideo}></video>
+      <video autoPlay ref={userVideo}></video>
+      <video autoPlay ref={partnerVideo}></video>
+      <video autoPlay ref={screenVideo}></video>
+      <video autoPlay ref={remoteScreenVideo}></video>
       <select defaultValue={"front_camera"} onChange={(e) => changeCamera(e)}>
         <option value="back_camera">Back Camera</option>
         <option value="front_camera">Front Camera</option>
