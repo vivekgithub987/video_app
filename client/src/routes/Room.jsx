@@ -16,7 +16,7 @@ const Room = (props) => {
   React.useEffect(() => {
     navigator.mediaDevices
       .getUserMedia({
-        audio: false,
+        audio: true,
         video: {
           facingMode:
             camera === "front_camera" ? "user" : { exact: "environment" },
